@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { md5 as md5HashWasm } from 'hash-wasm';
 import { NOOP_SYNC_LOGGER, type SyncLogger } from '@sp/sync-core';
 import { WebdavApi } from '../../../src/file-based/webdav/webdav-api';
@@ -1145,6 +1145,45 @@ describe('WebdavApi', () => {
       await expect(api.download({ path: '/' })).rejects.toBeInstanceOf(
         MissingCredentialsSPError,
       );
+    });
+
+    describe('path-only base URL', () => {
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      it('resolves against the page origin', async () => {
+        vi.stubGlobal('location', { origin: 'https://sp.example.com' });
+        const adapter = makeAdapter();
+        adapter.request.mockResolvedValueOnce(okResponse('body', 200, { etag: '"r"' }));
+        const api = makeApi(adapter, NOOP_SYNC_LOGGER, {
+          ...cfg,
+          baseUrl: '/webdav/',
+        } as WebdavPrivateCfg);
+
+        await api.download({ path: '/super productivity/op-1.json' });
+
+        expect(adapter.request.mock.calls[0][0]).toEqual(
+          expect.objectContaining({
+            url: 'https://sp.example.com/webdav/super%20productivity/op-1.json',
+          }),
+        );
+      });
+
+      it('leaves a protocol-relative base untouched by the page origin', async () => {
+        vi.stubGlobal('location', { origin: 'https://sp.example.com' });
+        const adapter = makeAdapter();
+        adapter.request.mockResolvedValueOnce(okResponse('body', 200, { etag: '"r"' }));
+        const api = makeApi(adapter, NOOP_SYNC_LOGGER, {
+          ...cfg,
+          baseUrl: '//other.example.com/dav/',
+        } as WebdavPrivateCfg);
+
+        await api.download({ path: 'op-1.json' });
+
+        const url = (adapter.request.mock.calls[0][0] as { url: string }).url;
+        expect(url).not.toContain('sp.example.com');
+      });
     });
 
     it('throws InvalidDataSPError for paths with .. (no path echo in message)', async () => {

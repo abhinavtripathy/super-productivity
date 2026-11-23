@@ -747,15 +747,23 @@ export class WebdavApi {
       // especially for providers like Mailbox.org that include spaces in the user's path.
       // We also want to avoid double-encoding if the path is already encoded.
       // See: https://github.com/super-productivity/super-productivity/issues/5508
+      // A path-only base ("/webdav/") targets the origin serving the web app,
+      // e.g. the Docker image's same-origin WebDAV proxy.
+      const pageOrigin = (globalThis as { location?: { origin?: string } }).location
+        ?.origin;
+      const resolveAgainst =
+        baseUrl.startsWith('/') && !baseUrl.startsWith('//') && pageOrigin
+          ? pageOrigin
+          : undefined;
       let url: URL;
       try {
-        url = new URL(baseUrl);
+        url = new URL(baseUrl, resolveAgainst);
       } catch {
         // Try to fix the base URL if it failed (likely due to spaces)
         // We manually replace spaces to avoid messing up existing encoded characters (like %2F)
         // which can happen with decodeURI/encodeURI roundtrips.
         const fixedBase = baseUrl.replace(/ /g, '%20');
-        url = new URL(fixedBase);
+        url = new URL(fixedBase, resolveAgainst);
       }
 
       // Remove trailing slash from base

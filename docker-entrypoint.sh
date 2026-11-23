@@ -4,6 +4,17 @@
 : "${APP_PORT:=80}"
 export APP_PORT
 
+# nginx's template step only substitutes variables that are defined; an unset
+# one would stay a literal "$WEBDAV_BACKEND" in the config.
+: "${WEBDAV_BACKEND:=}"
+export WEBDAV_BACKEND
+
+# With a WebDAV backend behind the app's /webdav/ proxy, prefill the sync
+# settings with that same-origin path unless a base URL is given.
+if [ -n "${WEBDAV_BACKEND}" ] && [ -z "${WEBDAV_BASE_URL}" ]; then
+  WEBDAV_BASE_URL=/webdav/
+fi
+
 # Generate ./assets/sync-config-default-override.json from environment variables
 JSON="{}"
 JSON_PATH=./assets/sync-config-default-override.json

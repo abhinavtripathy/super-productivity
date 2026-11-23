@@ -128,3 +128,6 @@ data/
 
 # Generated App Store Connect "What's New" notes (see tools/prepare-appstore-release-notes.js)
 /fastlane/appstore_metadata
+
+# server-folder sync data (docker-compose.server-sync.yaml)
+sp-sync-data/

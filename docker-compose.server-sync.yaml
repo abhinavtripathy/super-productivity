@@ -1,0 +1,36 @@
+# Web app + "server folder" sync: the sync file lives in ./sp-sync-data on
+# this machine. The WebDAV server is not published; browsers reach it only
+# through the app at /webdav/, so no CORS setup is needed.
+#
+#   WEBDAV_PASSWORD=change-me docker compose -f docker-compose.server-sync.yaml up -d
+#
+# Use HTTPS (a reverse proxy in front of port 8080) for anything beyond
+# localhost: the password travels with every sync request.
+services:
+  app:
+    build: .
+    ports:
+      - '8080:80'
+    environment:
+      WEBDAV_BACKEND: http://webdav:2345
+      # Prefills sync settings; only the password is entered in the app.
+      WEBDAV_USERNAME: ${WEBDAV_USERNAME:-sp}
+      SYNC_INTERVAL: ${SYNC_INTERVAL:-5}
+    depends_on:
+      webdav:
+        condition: service_healthy
+
+  webdav:
+    build: ./docker/server-folder-webdav
+    environment:
+      WEBDAV_USERNAME: ${WEBDAV_USERNAME:-sp}
+      WEBDAV_PASSWORD: ${WEBDAV_PASSWORD:?Set WEBDAV_PASSWORD}
+    volumes:
+      - ./sp-sync-data:/data
+    healthcheck:
+      # The Debian httpd image ships neither wget nor curl.
+      test: ['CMD', 'bash', '-c', 'exec 3<>/dev/tcp/127.0.0.1/2345']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
