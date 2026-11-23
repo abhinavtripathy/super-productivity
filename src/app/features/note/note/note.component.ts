@@ -5,6 +5,7 @@ import {
   input,
   Input,
   OnChanges,
+  output,
   signal,
   SimpleChanges,
   viewChild,
@@ -44,6 +45,9 @@ import {
 import { DialogConfirmComponent } from '../../../ui/dialog-confirm/dialog-confirm.component';
 import { RenderLinksPipe } from '../../../ui/pipes/render-links.pipe';
 import { isPathSafeToOpen } from '../../../../../electron/shared-with-frontend/is-external-url-allowed';
+import { InlineMarkdownComponent } from '../../../ui/inline-markdown/inline-markdown.component';
+import { LocaleDatePipe } from '../../../ui/pipes/locale-date.pipe';
+import { IS_TOUCH_PRIMARY } from '../../../util/is-mouse-primary';
 
 @Component({
   selector: 'note',
@@ -64,6 +68,8 @@ import { isPathSafeToOpen } from '../../../../../electron/shared-with-frontend/i
     AsyncPipe,
     TranslatePipe,
     RenderLinksPipe,
+    InlineMarkdownComponent,
+    LocaleDatePipe,
   ],
 })
 export class NoteComponent implements OnChanges {
@@ -99,6 +105,10 @@ export class NoteComponent implements OnChanges {
   readonly isFocus = input<boolean>();
 
   readonly markdownEl = viewChild<HTMLElement>('markdownEl');
+
+  // Lets the list turn off dragging while text is being selected in the editor.
+  readonly editingChange = output<boolean>();
+  readonly isEditingInline = signal(false);
 
   isLongNote?: boolean;
   shortenedNote?: string;
@@ -159,7 +169,7 @@ export class NoteComponent implements OnChanges {
     this._noteService.update(this.note.id, { isLock: !this.note.isLock });
   }
 
-  updateContent(newVal: any): void {
+  updateContent(newVal: string): void {
     if (!this.note) {
       throw new Error('No note');
     }
@@ -176,6 +186,48 @@ export class NoteComponent implements OnChanges {
     this._localDraftService.clearDraft('NOTE', this.note.id);
   }
 
+  toggleArchived(): void {
+    if (!this.note) {
+      throw new Error('No note');
+    }
+    this.stopInlineEdit();
+    this._noteService.setArchived(this.note.id, !this.note.isArchived);
+  }
+
+  /**
+   * Plain clicks edit in place. Touch devices, notes with Markdown parsing off
+   * and notes with a recovered draft keep the fullscreen editor, which owns
+   * the draft prompts.
+   */
+  onContentClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement | null)?.tagName?.toUpperCase() === 'A') {
+      return;
+    }
+    const canEditInline =
+      !IS_TOUCH_PRIMARY &&
+      !this.note.isLock &&
+      !this._localDraftService.loadDraft('NOTE', this.note.id);
+    if (!canEditInline) {
+      void this.editFullscreen(event);
+      return;
+    }
+    this.isEditingInline.set(true);
+    this.editingChange.emit(true);
+  }
+
+  onInlineChanged(content: string): void {
+    if (this.note && content !== this.note.content) {
+      this.updateContent(content);
+    }
+  }
+
+  stopInlineEdit(): void {
+    if (this.isEditingInline()) {
+      this.isEditingInline.set(false);
+      this.editingChange.emit(false);
+    }
+  }
+
   togglePinToToday(): void {
     if (!this.note) {
       throw new Error('No note');
@@ -185,10 +237,11 @@ export class NoteComponent implements OnChanges {
     });
   }
 
-  async editFullscreen(event: MouseEvent): Promise<void> {
-    if ((event as any)?.target?.tagName?.toUpperCase() === 'A') {
+  async editFullscreen(event?: MouseEvent): Promise<void> {
+    if ((event?.target as HTMLElement | undefined)?.tagName?.toUpperCase() === 'A') {
       return;
     }
+    this.stopInlineEdit();
     if (!this.note) {
       throw new Error('No note');
     }

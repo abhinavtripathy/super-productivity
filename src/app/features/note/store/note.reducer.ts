@@ -31,6 +31,9 @@ export const NOTE_FEATURE_NAME = 'note';
 export const selectNoteFeatureState = createFeatureSelector<NoteState>(NOTE_FEATURE_NAME);
 
 export const selectAllNotes = createSelector(selectNoteFeatureState, selectAll);
+export const selectArchivedNotes = createSelector(selectAllNotes, (notes) =>
+  notes.filter((note) => !!note.isArchived).sort((a, b) => b.created - a.created),
+);
 export const selectNoteTodayOrder = createSelector(
   selectNoteFeatureState,
   (state: NoteState) => state.todayOrder,

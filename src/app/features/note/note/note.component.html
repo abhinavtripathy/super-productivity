@@ -13,10 +13,34 @@
       />
     }
     @if (!note.imgUrl) {
+      <div
+        class="note-meta"
+        [title]="
+          T.F.NOTE.NOTE_CMP.CREATED
+            | translate: { date: note.created | localeDate: 'medium' }
+        "
+      >
+        @if (note.isArchived) {
+          <span class="archived-label"
+            >{{ T.F.NOTE.NOTE_CMP.ARCHIVED | translate }} ·</span
+          >
+        }
+        {{ note.created | localeDate: 'mediumDate' }}
+      </div>
       <div class="content">
-        @if (note.isLock) {
+        @if (isEditingInline()) {
+          <inline-markdown
+            [model]="note.content"
+            [isFocus]="true"
+            [isShowControls]="true"
+            [isShowChecklistToggle]="true"
+            (changed)="onInlineChanged($event)"
+            (blurred)="stopInlineEdit()"
+            (keyboardUnToggle)="stopInlineEdit()"
+          ></inline-markdown>
+        } @else if (note.isLock) {
           <div
-            (click)="editFullscreen($event)"
+            (click)="onContentClick($event)"
             class="markdown-preview"
             [innerHTML]="
               (isLongNote ? resolvedShortenedContent() : resolvedContent()) | renderLinks
@@ -24,7 +48,7 @@
           ></div>
         } @else {
           <div
-            (click)="editFullscreen($event)"
+            (click)="onContentClick($event)"
             markdown
             [data]="isLongNote ? resolvedShortenedContent() : resolvedContent()"
             class="markdown-preview markdown"
@@ -36,7 +60,7 @@
       class="bottom-controls handle-drag"
       [class.isOver]="note.imgUrl"
     >
-      @if (note.projectId) {
+      @if (note.projectId && !note.isArchived) {
         <button
           mat-icon-button
           (click)="togglePinToToday()"
@@ -99,6 +123,27 @@
         }}
       </button>
     }
+
+    @if (!note.imgUrl) {
+      <button
+        (click)="editFullscreen()"
+        mat-menu-item
+      >
+        <mat-icon>fullscreen</mat-icon>
+        {{ T.F.TASK.ADDITIONAL_INFO.OPEN_IN_FULLSCREEN | translate }}
+      </button>
+    }
+
+    <button
+      (click)="toggleArchived()"
+      mat-menu-item
+    >
+      <mat-icon>{{ note.isArchived ? 'unarchive' : 'archive' }}</mat-icon>
+      {{
+        (note.isArchived ? T.F.NOTE.NOTE_CMP.UNARCHIVE : T.F.NOTE.NOTE_CMP.ARCHIVE)
+          | translate
+      }}
+    </button>
 
     <button
       (click)="removeNote()"

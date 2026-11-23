@@ -12,6 +12,7 @@ import {
 import { nanoid } from 'nanoid';
 import {
   selectAllNotes,
+  selectArchivedNotes,
   selectNoteById,
   selectNoteFeatureState,
 } from './store/note.reducer';
@@ -31,6 +32,7 @@ export class NoteService {
   private _workContextService = inject(WorkContextService);
 
   notes$: Observable<Note[]> = this._store$.pipe(select(selectAllNotes));
+  archivedNotes$: Observable<Note[]> = this._store$.pipe(select(selectArchivedNotes));
   state$: Observable<NoteState> = this._store$.select(selectNoteFeatureState);
 
   getByIdOnce$(id: string): Observable<Note> {
@@ -80,6 +82,12 @@ export class NoteService {
         },
       }),
     );
+  }
+
+  // Archiving only flips the flag, so project and Today membership survive and
+  // unarchiving puts the note back exactly where it was.
+  setArchived(id: string, isArchived: boolean): void {
+    this.update(id, { isArchived });
   }
 
   updateOrder(ids: string[]): void {

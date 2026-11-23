@@ -318,6 +318,7 @@ export class WorkContextService {
     map((ac) => ac.noteIds),
     distinctUntilChanged(fastArrayCompare),
     switchMap((taskIds) => this._getNotesByIds$(taskIds)),
+    map((notes) => notes.filter((note) => !note?.isArchived)),
     shareReplay(1),
   );
 

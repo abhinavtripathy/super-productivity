@@ -217,6 +217,7 @@ const NOTE_FIELDS: Required<Note> = {
   imgUrl: 'https://img.example.invalid/x.png',
   isLock: true,
   backgroundColor: '#123456',
+  isArchived: true,
   created: 5,
   modified: 6,
 };

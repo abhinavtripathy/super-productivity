@@ -871,13 +871,23 @@
         "VIEW_TEXT_ONLY": "View as unparsed text"
       },
       "NOTE_CMP": {
+        "ARCHIVE": "Archive",
+        "ARCHIVED": "Archived",
+        "CREATED": "Created {{date}}",
         "DISABLE_PARSE": "Disable Markdown parsing for preview",
-        "ENABLE_PARSE": "Enable Markdown parsing"
+        "ENABLE_PARSE": "Enable Markdown parsing",
+        "UNARCHIVE": "Unarchive"
       },
       "NOTES_CMP": {
         "ADD_BTN": "Add new Note",
+        "ARCHIVED_TITLE": "Archived notes",
+        "BACK_TO_NOTES": "Back to notes",
         "DROP_TO_ADD": "Drop here to add new note",
-        "NO_NOTES": "There are currently no notes"
+        "NO_ARCHIVED": "No archived notes",
+        "NO_NOTES": "There are currently no notes",
+        "NO_SEARCH_RESULTS": "No notes match your search",
+        "SEARCH_PLACEHOLDER": "Search all notes",
+        "SHOW_ARCHIVED": "Show archived notes"
       },
       "S": {
         "NOTE_ADDED": "Note saved"
