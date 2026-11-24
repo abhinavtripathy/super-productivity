@@ -73,6 +73,18 @@
   </div>
 } @else {
   @let notes = workContextService.notes$ | async;
+  @if (isAddingNote()) {
+    <div class="new-note">
+      <inline-markdown
+        [model]="NEW_NOTE_TEMPLATE"
+        [isFocus]="true"
+        [isShowControls]="true"
+        [isShowChecklistToggle]="true"
+        (changed)="onNewNoteChanged($event)"
+        (blurred)="finishAddNote()"
+      ></inline-markdown>
+    </div>
+  }
   <div
     [@standardList]="$safeNavigationMigration(notes?.length)"
     cdkDropList
@@ -94,7 +106,7 @@
         ></note>
       </div>
     }
-    @if (notes?.length === 0) {
+    @if (notes?.length === 0 && !isAddingNote()) {
       <div class="no-notes-info">{{ T.F.NOTE.NOTES_CMP.NO_NOTES | translate }}</div>
     }
   </div>

@@ -60,6 +60,13 @@ header {
   // Let the parent bottom-panel-content handle scrolling instead
 }
 
+.new-note {
+  @include noteStyle;
+
+  margin: calc(var(--s) * 1.5) calc(var(--s) * 1.5) 0;
+  text-align: start;
+}
+
 note {
   display: block;
   margin-bottom: calc(var(--s) * 1.5);

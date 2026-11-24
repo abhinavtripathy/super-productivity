@@ -36,7 +36,6 @@
             [isShowChecklistToggle]="true"
             (changed)="onInlineChanged($event)"
             (blurred)="stopInlineEdit()"
-            (keyboardUnToggle)="stopInlineEdit()"
           ></inline-markdown>
         } @else if (note.isLock) {
           <div
