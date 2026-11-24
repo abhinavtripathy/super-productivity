@@ -48,6 +48,7 @@ import { isPathSafeToOpen } from '../../../../../electron/shared-with-frontend/i
 import { InlineMarkdownComponent } from '../../../ui/inline-markdown/inline-markdown.component';
 import { LocaleDatePipe } from '../../../ui/pipes/locale-date.pipe';
 import { IS_TOUCH_PRIMARY } from '../../../util/is-mouse-primary';
+import { toggleChecklistItemAtIndex } from '../../markdown-checklist/checklist-operations';
 
 @Component({
   selector: 'note',
@@ -200,7 +201,13 @@ export class NoteComponent implements OnChanges {
    * the draft prompts.
    */
   onContentClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement | null)?.tagName?.toUpperCase() === 'A') {
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName?.toUpperCase() === 'A') {
+      return;
+    }
+    const checkboxWrapper = target?.closest('.checkbox')?.closest('.checkbox-wrapper');
+    if (checkboxWrapper) {
+      this._toggleChecklistItem(event.currentTarget as HTMLElement, checkboxWrapper);
       return;
     }
     const canEditInline =
@@ -213,6 +220,17 @@ export class NoteComponent implements OnChanges {
     }
     this.isEditingInline.set(true);
     this.editingChange.emit(true);
+  }
+
+  /** Rendered checkboxes follow the item order in the source (see marked-options-factory). */
+  private _toggleChecklistItem(previewEl: HTMLElement, wrapper: Element): void {
+    const index = Array.from(previewEl.querySelectorAll('.checkbox-wrapper')).indexOf(
+      wrapper,
+    );
+    const next = toggleChecklistItemAtIndex(this.note.content, index);
+    if (next !== this.note.content) {
+      this.updateContent(next);
+    }
   }
 
   onInlineChanged(content: string): void {
