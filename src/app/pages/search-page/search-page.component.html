@@ -78,6 +78,13 @@
                   @if (item.isNote) {
                     <mat-icon class="issue-icon">comment</mat-icon>
                   }
+                  @if (item.isArchivedNote) {
+                    <mat-icon
+                      class="archive-icon"
+                      [title]="T.F.NOTE.NOTE_CMP.ARCHIVED | translate"
+                      >archive</mat-icon
+                    >
+                  }
                   @if (item.deletedEntry) {
                     <span class="deleted-label">
                       <mat-icon class="archive-icon">delete_outline</mat-icon>

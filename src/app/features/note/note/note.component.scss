@@ -58,6 +58,15 @@
   }
 }
 
+.note-meta {
+  padding: calc(var(--s) * 0.75) var(--s2) 0;
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  text-align: end;
+  color: var(--text-color-muted);
+  user-select: none;
+}
+
 .note-img {
   max-width: 100%;
   border-radius: var(--card-border-radius);
@@ -98,7 +107,7 @@
 // copied from inline-markdown component
 .markdown-preview {
   border: 0;
-  padding: var(--s) var(--s2);
+  padding: calc(var(--s) * 0.5) var(--s2) var(--s);
   margin: 0;
   width: 100%;
   box-sizing: border-box;

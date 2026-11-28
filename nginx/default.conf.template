@@ -24,6 +24,9 @@ server {
             return 404;
         }
 
+        # sync files can outgrow nginx's 1 MB default request body
+        client_max_body_size 100m;
+
         resolver 127.0.0.11;  # resolve webdav_backend by docker internal DNS
         rewrite ^/webdav/(.*)$ /$1 break;   # remove the `/webdav/` prefix
         proxy_pass $webdav_backend;

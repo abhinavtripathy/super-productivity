@@ -329,6 +329,7 @@ export class SearchPageComponent implements OnInit {
         isArchiveTask: false,
         isDone: false,
         isNote: true,
+        isArchivedNote: !!note.isArchived,
       };
     });
   }

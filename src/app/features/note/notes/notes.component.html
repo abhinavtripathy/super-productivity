@@ -8,6 +8,32 @@
     <mat-icon>add</mat-icon>
     {{ T.F.NOTE.NOTES_CMP.ADD_BTN | translate }}
   </button>
+
+  <div class="search-row">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      type="search"
+      class="search-input"
+      [value]="searchQuery()"
+      (input)="onSearchInput($event)"
+      (keydown.escape)="clearSearch()"
+      [placeholder]="T.F.NOTE.NOTES_CMP.SEARCH_PLACEHOLDER | translate"
+      [attr.aria-label]="T.F.NOTE.NOTES_CMP.SEARCH_PLACEHOLDER | translate"
+    />
+    <button
+      mat-icon-button
+      (click)="toggleShowArchived()"
+      [matTooltip]="
+        (isShowArchived()
+          ? T.F.NOTE.NOTES_CMP.BACK_TO_NOTES
+          : T.F.NOTE.NOTES_CMP.SHOW_ARCHIVED
+        ) | translate
+      "
+      [attr.aria-pressed]="isShowArchived()"
+    >
+      <mat-icon>{{ isShowArchived() ? 'inventory_2' : 'archive' }}</mat-icon>
+    </button>
+  </div>
 </header>
 
 @if (isDragOver) {
@@ -20,30 +46,68 @@
   </div>
 }
 
-<!---->
-@let notes = workContextService.notes$ | async;
-<div
-  [@standardList]="$safeNavigationMigration(notes?.length)"
-  cdkDropList
-  [cdkDropListData]="notes"
-  (cdkDropListDropped)="drop($event)"
-  class="notes"
->
-  <!---->
-  @for (note of notes; track note.id) {
-    <div
-      [id]="'n-' + note.id"
-      cdkDrag
-      [cdkDragStartDelay]="dragDelayForTouch()"
-    >
+@if (isSearching()) {
+  <div class="notes">
+    @for (note of searchResults(); track note.id) {
       <note
-        [isFocus]="isElementWasAdded && $index === 0"
         [note]="note"
+        (editingChange)="onNoteEditingChange(note.id, $event)"
       ></note>
+    } @empty {
+      <div class="no-notes-info">
+        {{ T.F.NOTE.NOTES_CMP.NO_SEARCH_RESULTS | translate }}
+      </div>
+    }
+  </div>
+} @else if (isShowArchived()) {
+  <div class="notes">
+    <div class="list-title">{{ T.F.NOTE.NOTES_CMP.ARCHIVED_TITLE | translate }}</div>
+    @for (note of archivedNotes(); track note.id) {
+      <note
+        [note]="note"
+        (editingChange)="onNoteEditingChange(note.id, $event)"
+      ></note>
+    } @empty {
+      <div class="no-notes-info">{{ T.F.NOTE.NOTES_CMP.NO_ARCHIVED | translate }}</div>
+    }
+  </div>
+} @else {
+  @let notes = workContextService.notes$ | async;
+  @if (isAddingNote()) {
+    <div class="new-note">
+      <inline-markdown
+        [model]="NEW_NOTE_TEMPLATE"
+        [isFocus]="true"
+        [isShowControls]="true"
+        [isShowChecklistToggle]="true"
+        (changed)="onNewNoteChanged($event)"
+        (blurred)="finishAddNote()"
+      ></inline-markdown>
     </div>
   }
-  <!---->
-  @if (notes?.length === 0) {
-    <div class="no-notes-info">{{ T.F.NOTE.NOTES_CMP.NO_NOTES | translate }}</div>
-  }
-</div>
+  <div
+    [@standardList]="$safeNavigationMigration(notes?.length)"
+    cdkDropList
+    [cdkDropListData]="notes"
+    (cdkDropListDropped)="drop($event)"
+    class="notes"
+  >
+    @for (note of notes; track note.id) {
+      <div
+        [id]="'n-' + note.id"
+        cdkDrag
+        [cdkDragDisabled]="editingNoteId() === note.id"
+        [cdkDragStartDelay]="dragDelayForTouch()"
+      >
+        <note
+          [isFocus]="isElementWasAdded && $index === 0"
+          [note]="note"
+          (editingChange)="onNoteEditingChange(note.id, $event)"
+        ></note>
+      </div>
+    }
+    @if (notes?.length === 0 && !isAddingNote()) {
+      <div class="no-notes-info">{{ T.F.NOTE.NOTES_CMP.NO_NOTES | translate }}</div>
+    }
+  </div>
+}

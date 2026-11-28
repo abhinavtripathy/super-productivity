@@ -287,6 +287,43 @@ describe('NoteComponent draft lifecycle', () => {
     });
   });
 
+  describe('checklist clicks in the preview', () => {
+    const CHECKLIST = '# List\n- [ ] one\n- [x] two';
+
+    const clickIn = (html: string, selector: string): HTMLElement => {
+      const previewEl = document.createElement('div');
+      previewEl.innerHTML = html;
+      const target = previewEl.querySelectorAll<HTMLElement>(selector)[1];
+      component.onContentClick({
+        target,
+        currentTarget: previewEl,
+      } as unknown as MouseEvent);
+      return previewEl;
+    };
+    const items =
+      '<li class="checkbox-wrapper"><span class="checkbox">x</span><span class="checkbox-label">one</span></li>' +
+      '<li class="checkbox-wrapper"><span class="checkbox">x</span><span class="checkbox-label">two</span></li>';
+
+    beforeEach(() => {
+      component.noteSet = { ...NOTE, content: CHECKLIST };
+    });
+
+    it('toggles the clicked item instead of starting to edit', () => {
+      clickIn(items, '.checkbox');
+
+      expect(noteService.update).toHaveBeenCalledWith(NOTE.id, {
+        content: '# List\n- [ ] one\n- [ ] two',
+      });
+      expect(component.isEditingInline()).toBe(false);
+    });
+
+    it('edits instead of toggling when the item text is clicked', () => {
+      clickIn(items, '.checkbox-label');
+
+      expect(noteService.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('removeNote', () => {
     it('clears the draft along with the note', () => {
       component.removeNote();

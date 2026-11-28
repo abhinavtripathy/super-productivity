@@ -2,16 +2,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  computed,
   inject,
+  signal,
   viewChild,
   OnInit,
   DestroyRef,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NoteService } from '../note.service';
-import { MatButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { DialogAddNoteComponent } from '../dialog-add-note/dialog-add-note.component';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
 import { standardListAnimation } from '../../../ui/animations/standard-list.ani';
 import { fadeAnimation } from '../../../ui/animations/fade.ani';
 import { Note } from '../note.model';
@@ -29,6 +30,11 @@ import { LayoutService } from 'src/app/core-ui/layout/layout.service';
 import { IS_MOBILE } from 'src/app/util/is-mobile';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs/operators';
+import { filterNotesByQuery } from '../filter-notes-by-query';
+import { InlineMarkdownComponent } from '../../../ui/inline-markdown/inline-markdown.component';
+
+// A new note starts as a heading with the caret after it.
+const NEW_NOTE_TEMPLATE = '# ';
 
 @Component({
   selector: 'notes',
@@ -38,18 +44,20 @@ import { distinctUntilChanged, map } from 'rxjs/operators';
   animations: [standardListAnimation, fadeAnimation],
   imports: [
     MatButton,
+    MatIconButton,
+    MatTooltip,
     MatIcon,
     CdkDropList,
     CdkDrag,
     NoteComponent,
     AsyncPipe,
     TranslatePipe,
+    InlineMarkdownComponent,
   ],
 })
 export class NotesComponent implements OnInit {
   noteService = inject(NoteService);
   workContextService = inject(WorkContextService);
-  private _matDialog = inject(MatDialog);
   private _layoutService = inject(LayoutService);
   private _activatedRoute = inject(ActivatedRoute);
   private _destroyRef = inject(DestroyRef);
@@ -63,6 +71,23 @@ export class NotesComponent implements OnInit {
   dragEnterTarget?: HTMLElement;
 
   readonly buttonEl = viewChild<MatButton>('buttonEl');
+
+  readonly searchQuery = signal('');
+  readonly isShowArchived = signal(false);
+  readonly editingNoteId = signal<string | null>(null);
+  readonly isAddingNote = signal(false);
+  readonly NEW_NOTE_TEMPLATE = NEW_NOTE_TEMPLATE;
+  // The editor can commit twice (on blur and on destroy); add the note once.
+  private _isNewNoteSaved = false;
+
+  private readonly _allNotes = toSignal(this.noteService.notes$, { initialValue: [] });
+  readonly archivedNotes = toSignal(this.noteService.archivedNotes$, {
+    initialValue: [],
+  });
+  readonly isSearching = computed(() => this.searchQuery().trim().length > 0);
+  readonly searchResults = computed(() =>
+    filterNotesByQuery(this._allNotes(), this.searchQuery()),
+  );
 
   @HostListener('dragenter', ['$event']) onDragEnter(ev: DragEvent): void {
     this.dragEnterTarget = ev.target as HTMLElement;
@@ -170,13 +195,44 @@ export class NotesComponent implements OnInit {
     }
   }
 
+  onSearchInput(ev: Event): void {
+    this.searchQuery.set((ev.target as HTMLInputElement).value);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
+  toggleShowArchived(): void {
+    this.isShowArchived.update((v) => !v);
+  }
+
+  onNoteEditingChange(noteId: string, isEditing: boolean): void {
+    if (isEditing) {
+      this.editingNoteId.set(noteId);
+    } else if (this.editingNoteId() === noteId) {
+      this.editingNoteId.set(null);
+    }
+  }
+
   addNote(): void {
-    this._matDialog.open(DialogAddNoteComponent, {
-      minWidth: '100vw',
-      height: '100vh',
-      restoreFocus: true,
-      autoFocus: 'textarea',
-    });
+    this.searchQuery.set('');
+    this.isShowArchived.set(false);
+    this._isNewNoteSaved = false;
+    this.isAddingNote.set(true);
+  }
+
+  /** Only a note with text beyond the heading marker is created. */
+  onNewNoteChanged(content: string): void {
+    if (this._isNewNoteSaved || content.replace(/^#+\s*/, '').trim() === '') {
+      return;
+    }
+    this._isNewNoteSaved = true;
+    this.noteService.add({ content }, true);
+  }
+
+  finishAddNote(): void {
+    this.isAddingNote.set(false);
   }
 
   protected readonly dragDelayForTouch = dragDelayForTouch;

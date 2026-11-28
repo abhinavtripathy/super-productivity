@@ -52,3 +52,6 @@ packages/super-sync-server/public/terms.html
 # Our hosted instance's Terms of Service — names German law, a Leipzig venue and our own
 # contact address. Operators supply their own via <DATA_DIR>/legal/terms.html.
 packages/super-sync-server/legal/
+
+# server-folder sync data
+sp-sync-data
